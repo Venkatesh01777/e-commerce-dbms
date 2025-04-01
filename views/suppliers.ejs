@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suppliers | Database Management</title>
+    <link rel="stylesheet" href="/styles/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header>
+        <h1>Supplier Management</h1>
+        <p class="subtitle">View and manage vendor information</p>
+    </header>
+
+    <nav class="navbar">
+        <ul>
+            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="/customers"><i class="fas fa-users"></i> Customers</a></li>
+            <li><a href="/products"><i class="fas fa-box-open"></i> Products</a></li>
+            <li><a href="/employees"><i class="fas fa-user-tie"></i> Employees</a></li>
+            <li><a href="/suppliers" class="active"><i class="fas fa-truck"></i> Suppliers</a></li>
+            <li><a href="/shippers"><i class="fas fa-shipping-fast"></i> Shippers</a></li>
+            <li><a href="/orders"><i class="fas fa-clipboard-list"></i> Orders</a></li>
+            <li><a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+        
+        <div class="card suppliers">
+            <i class="fas fa-truck"></i>
+            <h2>Supplier Network</h2>
+            <p>Total: <%= suppliers.length %> active suppliers</p>
+        </div>
+        <div class="search-container">
+            <input type="text" id="supplierSearch" placeholder="Search suppliers by name..." onkeyup="searchTable('supplierSearch', '.content-table')">
+            <i class="fas fa-search search-icon"></i>
+        </div>
+        <table class="content-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Supplier Name</th>
+                    <th>Contact Name</th>
+                    <th>Address</th>
+                    <th>City</th>
+                    <th>Postalcode</th>
+                    <th>Country</th>
+                    <th>Phone</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% suppliers.forEach(supplier => { %>
+                <tr>
+                    <td><%= supplier.supplierid %></td>
+                    <td><%= supplier.suppliersname %></td>
+                    <td><%= supplier.contactname %></td>
+                    <td><%= supplier.address %></td>
+                    <td><%= supplier.city %></td>
+                    <td><%= supplier.postalcode %></td>
+                    <td><%= supplier.country %></td>
+                    <td><%= supplier.phone %></td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+        <div id="no-results" class="no-results">
+            <i class="fas fa-search fa-lg"></i>
+            <p>No suppliers found matching your search</p>
+        </div>
+    </div>
+    <script src="/script.js"></script>
+</body>
+</html>

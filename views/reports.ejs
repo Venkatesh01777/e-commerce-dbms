@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports | Database Management</title>
+    <link rel="stylesheet" href="/styles/styles.css">
+   
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Reports</h1>
+        <p class="subtitle">Generate Business insights and Analytics</p>
+    </header>
+
+    <nav class="navbar">
+        <ul>
+            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="/customers"><i class="fas fa-users"></i> Customers</a></li>
+            <li><a href="/products" class="active"><i class="fas fa-box-open"></i> Products</a></li>
+            <li><a href="/employees"><i class="fas fa-user-tie"></i> Employees</a></li>
+            <li><a href="/suppliers"><i class="fas fa-truck"></i> Suppliers</a></li>
+            <li><a href="/shippers"><i class="fas fa-shipping-fast"></i> Shippers</a></li>
+            <li><a href="/orders"><i class="fas fa-clipboard-list"></i> Orders</a></li>
+            <li><a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+        
+        <div class="card products">
+            <i class="fas fa-box-open"></i>
+            <h2>Report Analysis</h2>
+            <p></p>
+        </div>
+   </div>
+   <div class="container">
+    <div class="summary-cards">
+        <div class="card"><h3>Total Orders</h3><p><%= summaryStats.total_orders %></p></div>
+        <div class="card"><h3>Total Revenue</h3><p>$<%= summaryStats.total_revenue %></p></div>
+        <div class="card"><h3>Total Customers</h3><p><%= summaryStats.total_customers %></p></div>
+        <div class="card"><h3>Total Products</h3><p><%= summaryStats.total_products %></p></div>
+    </div>
+
+    <div class="chart-grid">
+        <div class="chart-container">
+            <canvas id="salesChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <p id="rp2">Best Products Chart</p>
+            <canvas id="bestProductsChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="topCustomersChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="employeeOrdersChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <p id="rp2">Orders by Shippers Chart</p>
+            <canvas id="shipperOrdersChart"></canvas>
+        </div>
+    </div>
+
+
+</div>
+    <!-- Embed JSON Data for Charts -->
+    <script type="application/json" id="sales-trends"><%- JSON.stringify(salesTrends) %></script>
+    <script type="application/json" id="best-products"><%- JSON.stringify(bestProducts) %></script>
+    <script type="application/json" id="top-customers"><%- JSON.stringify(topCustomers) %></script>
+    <script type="application/json" id="employee-orders"><%- JSON.stringify(employeeOrders) %></script>
+    <script type="application/json" id="shipper-orders"><%- JSON.stringify(shipperOrders) %></script>
+
+    <script src ="/reports.js"></script>
+</body>
+</html>
