@@ -45,6 +45,7 @@ app.get('/products', async (req, res) => {
       FROM products p
       JOIN suppliers s ON p.suppliersid = s.supplierid
       JOIN categories c ON p.categoryid = c.categoryid
+      ORDER BY productid
     `);
     res.render('products', { products: rows });
   } catch (err) {
@@ -59,7 +60,7 @@ app.get('/customers', async (req, res) => {
       SELECT customerid, customername, contractname, 
              address, city, postalcode, country 
       FROM customers
-      ORDER BY customername
+      ORDER BY customerid
     `);
     res.render('customers', { customers: rows });
   } catch (err) {
@@ -74,7 +75,7 @@ app.get('/employees', async (req, res) => {
       SELECT employeeid, lastname, firstname, 
              birthdate, photo, notes
       FROM employees
-      ORDER BY lastname, firstname
+      ORDER BY employeeid
     `);
     res.render('employees', { employees: rows });
   } catch (err) {
@@ -89,7 +90,7 @@ app.get('/suppliers', async (req, res) => {
       SELECT supplierid, suppliersname, contactname, address, city, postalcode
              country, phone
       FROM suppliers
-      ORDER BY suppliersname
+      ORDER BY supplierid
     `);
     res.render('suppliers', { suppliers: rows });
   } catch (err) {
@@ -104,7 +105,7 @@ app.get('/shippers', async (req, res) => {
       SELECT shipperid, shippername, 
              phone
       FROM shippers
-      ORDER BY shippername
+      ORDER BY shipperid
     `);
     res.render('shippers', { shippers: rows });
   } catch (err) {
@@ -138,7 +139,7 @@ app.get('/orders', async (req, res) => {
       JOIN shippers s ON o.shipperid = s.shipperid
       JOIN products p ON od.productid = p.productid
       JOIN suppliers sup ON p.suppliersid = sup.supplierid  
-      ORDER BY o.orderdate DESC
+      ORDER BY od.orderdetailid DESC
   `);
   
   const [customers, employees, suppliers, shippers, products] = await Promise.all([
