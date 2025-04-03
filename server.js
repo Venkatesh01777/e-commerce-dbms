@@ -33,7 +33,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.set('view engine', 'ejs');  // You need this for res.render() to work
 
-// Route to display products
+
 app.get("/",(req,res)=>{
   res.render("home");
 })
