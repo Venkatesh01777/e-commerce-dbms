@@ -2,7 +2,7 @@ import express from 'express';
 import pg from 'pg';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
 const port = 3000;
@@ -32,7 +32,7 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.set('view engine', 'ejs');  // You need this for res.render() to work
-
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.get("/",(req,res)=>{
   res.render("home");
@@ -236,6 +236,51 @@ app.get("/reports", async(req, res) => {
     console.error(err.message);
     res.status(500).send("Server Error");
 }
+});
+
+app.post("/api/ai-query", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt is required" });
+    }
+
+    // Step 1: Generate SQL query using Gemini AI
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro"  });
+
+    const response = await model.generateContent(
+      `You are a PostgreSQL expert. Generate SQL queries for a Northwind database with these tables:
+      - products (productid, productname, suppliersid, categoryid, unit, price)
+      - customers (customerid, customername, contractname, address, city, postalcode, country)
+      - employees (employeeid, lastname, firstname, birthdate, photo, notes)
+      - suppliers (supplierid, suppliersname, contactname, address, city, postalcode, country, phone)
+      - shippers (shipperid, shippername, phone)
+      - orders (orderid, customerid, employeeid, orderdate, shipperid)
+      - ordersdetails (orderdetailid, orderid, productid, quantity)
+      - categories (categoryid, categoryname, descriptiontext)
+      
+      Return ONLY the SQL query with no additional explanation or formatting.read ordersdetails properly.
+
+
+      User request: ${prompt}`
+    );
+
+    let generatedQuery = response.response.text(); // Correct way to extract text
+    generatedQuery = generatedQuery.replace(/```sql|```/g, "").trim();
+    console.log("Generated SQL Query:", generatedQuery);
+    // Step 2: Execute the generated query
+    const { rows } = await pool.query(generatedQuery);
+
+    // Step 3: Return results
+    res.json({
+      query: generatedQuery,
+      data: rows,
+    });
+  } catch (err) {
+    console.error("AI Query Error:", err);
+    res.status(500).json({ error: "Failed to process AI query" });
+  }
 });
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
