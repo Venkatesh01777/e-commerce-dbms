@@ -1,7 +1,7 @@
-import express from 'express';
-import pg from 'pg';
-import bodyParser from 'body-parser';
-import dotenv from 'dotenv';
+import express from "express";
+import pg from "pg";
+import bodyParser from "body-parser";
+import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
@@ -9,7 +9,7 @@ const port = 3000;
 dotenv.config();
 
 // PostgreSQL connection
-const pool = new pg.Pool({  
+const pool = new pg.Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
@@ -18,27 +18,28 @@ const pool = new pg.Pool({
 });
 
 // Test database connection
-pool.connect()
-  .then(client => {
-    console.log('Connected to PostgreSQL database');
-    client.release();  // Important: release the client back to the pool
+pool
+  .connect()
+  .then((client) => {
+    console.log("Connected to PostgreSQL database");
+    client.release(); // Important: release the client back to the pool
   })
-  .catch(err => {
-    console.error('Database connection error:', err);
-    process.exit(1);  // Exit if connection fails
+  .catch((err) => {
+    console.error("Database connection error:", err);
+    process.exit(1); // Exit if connection fails
   });
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
-app.set('view engine', 'ejs');  // You need this for res.render() to work
+app.use(express.static("public"));
+app.set("view engine", "ejs"); // You need this for res.render() to work
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-app.get("/",(req,res)=>{
+app.get("/", (req, res) => {
   res.render("home");
-})
+});
 
-app.get('/products', async (req, res) => {
+app.get("/products", async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT p.productid, p.productname, s.suppliersname, c.categoryname, p.unit, p.price 
@@ -47,14 +48,14 @@ app.get('/products', async (req, res) => {
       JOIN categories c ON p.categoryid = c.categoryid
       ORDER BY productid
     `);
-    res.render('products', { products: rows });
+    res.render("products", { products: rows });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Server Error');
+    res.status(500).send("Server Error");
   }
 });
 
-app.get('/customers', async (req, res) => {
+app.get("/customers", async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT customerid, customername, contractname, 
@@ -62,14 +63,14 @@ app.get('/customers', async (req, res) => {
       FROM customers
       ORDER BY customerid
     `);
-    res.render('customers', { customers: rows });
+    res.render("customers", { customers: rows });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Server Error');
+    res.status(500).send("Server Error");
   }
 });
 
-app.get('/employees', async (req, res) => {
+app.get("/employees", async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT employeeid, lastname, firstname, 
@@ -77,14 +78,14 @@ app.get('/employees', async (req, res) => {
       FROM employees
       ORDER BY employeeid
     `);
-    res.render('employees', { employees: rows });
+    res.render("employees", { employees: rows });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Server Error');
+    res.status(500).send("Server Error");
   }
 });
 
-app.get('/suppliers', async (req, res) => {
+app.get("/suppliers", async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT supplierid, suppliersname, contactname, address, city, postalcode
@@ -92,14 +93,14 @@ app.get('/suppliers', async (req, res) => {
       FROM suppliers
       ORDER BY supplierid
     `);
-    res.render('suppliers', { suppliers: rows });
+    res.render("suppliers", { suppliers: rows });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Server Error');
+    res.status(500).send("Server Error");
   }
 });
 
-app.get('/shippers', async (req, res) => {
+app.get("/shippers", async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT shipperid, shippername, 
@@ -107,14 +108,14 @@ app.get('/shippers', async (req, res) => {
       FROM shippers
       ORDER BY shipperid
     `);
-    res.render('shippers', { shippers: rows });
+    res.render("shippers", { shippers: rows });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Server Error');
+    res.status(500).send("Server Error");
   }
 });
 
-app.get('/orders', async (req, res) => {
+app.get("/orders", async (req, res) => {
   const orders = await pool.query(`
       SELECT 
           od.orderdetailid,  
@@ -141,27 +142,28 @@ app.get('/orders', async (req, res) => {
       JOIN suppliers sup ON p.suppliersid = sup.supplierid  
       ORDER BY od.orderdetailid DESC
   `);
-  
-  const [customers, employees, suppliers, shippers, products] = await Promise.all([
-      pool.query('SELECT customerid, customername FROM customers'),
-      pool.query('SELECT employeeid, firstname, lastname FROM employees'),
-      pool.query('SELECT supplierid, suppliersname FROM suppliers'),
-      pool.query('SELECT shipperid, shippername FROM shippers'),
-      pool.query('SELECT productid, productname FROM products')
-  ]);
 
-  res.render('orders', {
-      orders: orders.rows,
-      customers: customers.rows,
-      employees: employees.rows,
-      suppliers: suppliers.rows,
-      shippers: shippers.rows,
-      products: products.rows
+  const [customers, employees, suppliers, shippers, products] =
+    await Promise.all([
+      pool.query("SELECT customerid, customername FROM customers"),
+      pool.query("SELECT employeeid, firstname, lastname FROM employees"),
+      pool.query("SELECT supplierid, suppliersname FROM suppliers"),
+      pool.query("SELECT shipperid, shippername FROM shippers"),
+      pool.query("SELECT productid, productname FROM products"),
+    ]);
+
+  res.render("orders", {
+    orders: orders.rows,
+    customers: customers.rows,
+    employees: employees.rows,
+    suppliers: suppliers.rows,
+    shippers: shippers.rows,
+    products: products.rows,
   });
 });
 
 // Render reports page on GET /reports
-app.get("/reports", async(req, res) => {
+app.get("/reports", async (req, res) => {
   try {
     const salesTrends = await pool.query(`
         SELECT 
@@ -225,17 +227,17 @@ app.get("/reports", async(req, res) => {
     `);
 
     res.render("reports", {
-        salesTrends: salesTrends.rows,
-        bestProducts: bestProducts.rows,
-        topCustomers: topCustomers.rows,
-        employeeOrders: employeeOrders.rows,
-        shipperOrders: shipperOrders.rows,
-        summaryStats: summaryStats.rows[0]
+      salesTrends: salesTrends.rows,
+      bestProducts: bestProducts.rows,
+      topCustomers: topCustomers.rows,
+      employeeOrders: employeeOrders.rows,
+      shipperOrders: shipperOrders.rows,
+      summaryStats: summaryStats.rows[0],
     });
-} catch (err) {
+  } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
-}
+  }
 });
 
 app.post("/api/ai-query", async (req, res) => {
@@ -247,7 +249,7 @@ app.post("/api/ai-query", async (req, res) => {
     }
 
     // Step 1: Generate SQL query using Gemini AI
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro"  });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const response = await model.generateContent(
       `You are a PostgreSQL expert. Generate SQL queries for a Northwind database with these tables:

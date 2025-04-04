@@ -1,77 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Customers | Database Management</title>
-    <link rel="stylesheet" href="/styles/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/styles/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+  </head>
+  <body>
     <header>
-        <h1>Customer Management</h1>
-        <p class="subtitle">View and manage customer information</p>
+      <h1>Customer Management</h1>
+      <p class="subtitle">View and manage customer information</p>
     </header>
 
     <nav class="navbar">
-        <ul>
-            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
-            <li><a href="/customers" class="active"><i class="fas fa-users"></i> Customers</a></li>
-            <li><a href="/products"><i class="fas fa-box-open"></i> Products</a></li>
-            <li><a href="/employees"><i class="fas fa-user-tie"></i> Employees</a></li>
-            <li><a href="/suppliers"><i class="fas fa-truck"></i> Suppliers</a></li>
-            <li><a href="/shippers"><i class="fas fa-shipping-fast"></i> Shippers</a></li>
-            <li><a href="/orders"><i class="fas fa-clipboard-list"></i> Orders</a></li>
-            <li><a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
-        </ul>
+      <ul>
+        <li>
+          <a href="/"><i class="fas fa-home"></i> Home</a>
+        </li>
+        <li>
+          <a href="/customers" class="active"
+            ><i class="fas fa-users"></i> Customers</a
+          >
+        </li>
+        <li>
+          <a href="/products"><i class="fas fa-box-open"></i> Products</a>
+        </li>
+        <li>
+          <a href="/employees"><i class="fas fa-user-tie"></i> Employees</a>
+        </li>
+        <li>
+          <a href="/suppliers"><i class="fas fa-truck"></i> Suppliers</a>
+        </li>
+        <li>
+          <a href="/shippers"><i class="fas fa-shipping-fast"></i> Shippers</a>
+        </li>
+        <li>
+          <a href="/orders"><i class="fas fa-clipboard-list"></i> Orders</a>
+        </li>
+        <li>
+          <a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a>
+        </li>
+      </ul>
     </nav>
 
     <div class="container">
-        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-        
-        <div class="card customers">
-            <i class="fas fa-users"></i>
-            <h2>Customer Records</h2>
-            <p>Total: <%= customers.length %> active customers</p>
-        </div>
-        <div class="search-container">
-            <input type="text" id="customerSearch" placeholder="Search customers by name..." onkeyup="searchTable('customerSearch', '.content-table')">
-            <i class="fas fa-search search-icon"></i>
-        </div>
-        <table class="content-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Customer Name</th>
-                    <th>Contact Name</th>
-                    <th>Address</th> 
-                    <th>City</th>
-                    <th>postalcode</th>
-                    <th>Country</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% customers.forEach(customer => { %>
-                <tr>
-                    <td><%= customer.customerid %></td>
-                    <td><%= customer.customername %></td>
-                    <td><%= customer.contractname %></td>
-                    <td><%= customer.address %></td>
-                    <td><%= customer.city %></td>
-                    <td><%= customer.postalcode %></td>
-                    <td><%= customer.country %></td>
-                </tr>
-                <% }); %>
-            </tbody>
-        </table>
+      <a href="/" class="back-btn"
+        ><i class="fas fa-arrow-left"></i> Back to Dashboard</a
+      >
 
-        <div id="no-results" class="no-results">
-            <i class="fas fa-search fa-lg"></i>
-            <p>No customers found matching your search</p>
-        </div>
+      <div class="card customers">
+        <i class="fas fa-users"></i>
+        <h2>Customer Records</h2>
+        <p>Total: <%= customers.length %> active customers</p>
+      </div>
+      <div class="search-container">
+        <input
+          type="text"
+          id="customerSearch"
+          placeholder="Search customers by name..."
+          onkeyup="searchTable('customerSearch', '.content-table')"
+        />
+        <i class="fas fa-search search-icon"></i>
+      </div>
+      <table class="content-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Customer Name</th>
+            <th>Contact Name</th>
+            <th>Address</th>
+            <th>City</th>
+            <th>postalcode</th>
+            <th>Country</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% customers.forEach(customer => { %>
+          <tr>
+            <td><%= customer.customerid %></td>
+            <td><%= customer.customername %></td>
+            <td><%= customer.contractname %></td>
+            <td><%= customer.address %></td>
+            <td><%= customer.city %></td>
+            <td><%= customer.postalcode %></td>
+            <td><%= customer.country %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
 
+      <div id="no-results" class="no-results">
+        <i class="fas fa-search fa-lg"></i>
+        <p>No customers found matching your search</p>
+      </div>
     </div>
     <script src="/script.js"></script>
-
-</body>
+  </body>
 </html>

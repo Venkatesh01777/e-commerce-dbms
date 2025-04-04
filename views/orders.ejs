@@ -1,121 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Orders | Database Management</title>
-    <link rel="stylesheet" href="/styles/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/styles/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+  </head>
+  <body>
     <header>
-        <h1>Order Management</h1>
-        <p class="subtitle">View and process customer orders</p>
+      <h1>Order Management</h1>
+      <p class="subtitle">View and process customer orders</p>
     </header>
 
     <nav class="navbar">
-        <ul>
-            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
-            <li><a href="/customers"><i class="fas fa-users"></i> Customers</a></li>
-            <li><a href="/products"><i class="fas fa-box-open"></i> Products</a></li>
-            <li><a href="/employees"><i class="fas fa-user-tie"></i> Employees</a></li>
-            <li><a href="/suppliers"><i class="fas fa-truck"></i> Suppliers</a></li>
-            <li><a href="/shippers"><i class="fas fa-shipping-fast"></i> Shippers</a></li>
-            <li><a href="/orders" class="active"><i class="fas fa-clipboard-list"></i> Orders</a></li>
-            <li><a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
-        </ul>
+      <ul>
+        <li>
+          <a href="/"><i class="fas fa-home"></i> Home</a>
+        </li>
+        <li>
+          <a href="/customers"><i class="fas fa-users"></i> Customers</a>
+        </li>
+        <li>
+          <a href="/products"><i class="fas fa-box-open"></i> Products</a>
+        </li>
+        <li>
+          <a href="/employees"><i class="fas fa-user-tie"></i> Employees</a>
+        </li>
+        <li>
+          <a href="/suppliers"><i class="fas fa-truck"></i> Suppliers</a>
+        </li>
+        <li>
+          <a href="/shippers"><i class="fas fa-shipping-fast"></i> Shippers</a>
+        </li>
+        <li>
+          <a href="/orders" class="active"
+            ><i class="fas fa-clipboard-list"></i> Orders</a
+          >
+        </li>
+        <li>
+          <a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a>
+        </li>
+      </ul>
     </nav>
 
     <div class="container">
-        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-        
-        <div class="card orders">
-            <i class="fas fa-clipboard-list"></i>
-            <h2>Order Records</h2>
-            <p>Total: <%= orders.length %> active orders</p>
+      <a href="/" class="back-btn"
+        ><i class="fas fa-arrow-left"></i> Back to Dashboard</a
+      >
+
+      <div class="card orders">
+        <i class="fas fa-clipboard-list"></i>
+        <h2>Order Records</h2>
+        <p>Total: <%= orders.length %> active orders</p>
+      </div>
+
+      <!-- orders.ejs -->
+      <div class="search-filter-container">
+        <!-- Order ID Search -->
+        <div class="search-container">
+          <input
+            type="text"
+            id="orderSearch"
+            placeholder="Search by Order ID..."
+            onkeyup="filterOrders()"
+          />
+          <i class="fas fa-search search-icon"></i>
         </div>
 
-<!-- orders.ejs -->
-<div class="search-filter-container">
-    <!-- Order ID Search -->
-    <div class="search-container">
-        <input type="text" id="orderSearch" placeholder="Search by Order ID..." 
-               onkeyup="filterOrders()">
-        <i class="fas fa-search search-icon"></i>
-    </div>
-
-    <!-- All Filters -->
-    <div class="filter-grid">
-        <!-- Column 1 -->
-        <div class="filter-group">
+        <!-- All Filters -->
+        <div class="filter-grid">
+          <!-- Column 1 -->
+          <div class="filter-group">
             <label>Customer</label>
             <select id="customerFilter" onchange="filterOrders()">
-                <option value="">All Customers</option>
-                <% customers.forEach(c => { %>
-                    <option value="<%= c.customerid %>"><%= c.customername %></option>
-                <% }); %>
+              <option value="">All Customers</option>
+              <% customers.forEach(c => { %>
+              <option value="<%= c.customerid %>"><%= c.customername %></option>
+              <% }); %>
             </select>
-        </div>
+          </div>
 
-        <!-- Column 2 -->
-        <div class="filter-group">
+          <!-- Column 2 -->
+          <div class="filter-group">
             <label>Employee</label>
             <select id="employeeFilter" onchange="filterOrders()">
-                <option value="">All Employees</option>
-                <% employees.forEach(e => { %>
-                    <option value="<%= e.employeeid %>"><%= e.firstname %> <%= e.lastname %></option>
-                <% }); %>
+              <option value="">All Employees</option>
+              <% employees.forEach(e => { %>
+              <option value="<%= e.employeeid %>">
+                <%= e.firstname %> <%= e.lastname %>
+              </option>
+              <% }); %>
             </select>
-        </div>
+          </div>
 
-        <!-- Column 3 -->
-        <div class="filter-group">
+          <!-- Column 3 -->
+          <div class="filter-group">
             <label>Supplier</label>
             <select id="supplierFilter" onchange="filterOrders()">
-                <option value="">All Suppliers</option>
-                <% suppliers.forEach(s => { %>
-                    <option value="<%= s.supplierid %>"><%= s.suppliersname %></option>
-                <% }); %>
+              <option value="">All Suppliers</option>
+              <% suppliers.forEach(s => { %>
+              <option value="<%= s.supplierid %>">
+                <%= s.suppliersname %>
+              </option>
+              <% }); %>
             </select>
-        </div>
+          </div>
 
-        <!-- Column 4 -->
-        <div class="filter-group">
+          <!-- Column 4 -->
+          <div class="filter-group">
             <label>Shipper</label>
             <select id="shipperFilter" onchange="filterOrders()">
-                <option value="">All Shippers</option>
-                <% shippers.forEach(s => { %>
-                    <option value="<%= s.shipperid %>"><%= s.shippername %></option>
-                <% }); %>
+              <option value="">All Shippers</option>
+              <% shippers.forEach(s => { %>
+              <option value="<%= s.shipperid %>"><%= s.shippername %></option>
+              <% }); %>
             </select>
-        </div>
+          </div>
 
-        <!-- Column 5 -->
-        <div class="filter-group">
+          <!-- Column 5 -->
+          <div class="filter-group">
             <label>Product</label>
             <select id="productFilter" onchange="filterOrders()">
-                <option value="">All Products</option>
-                <% products.forEach(p => { %>
-                    <option value="<%= p.productid %>"><%= p.productname %></option>
-                <% }); %>
+              <option value="">All Products</option>
+              <% products.forEach(p => { %>
+              <option value="<%= p.productid %>"><%= p.productname %></option>
+              <% }); %>
             </select>
-        </div>
+          </div>
 
-        <!-- Column 6 -->
-        <div class="filter-group">
+          <!-- Column 6 -->
+          <div class="filter-group">
             <label>Price Range</label>
             <div class="price-range">
-                <input type="number" id="minPrice" placeholder="Min" step="0.01" onchange="filterOrders()">
-                <span>to</span>
-                <input type="number" id="maxPrice" placeholder="Max" step="0.01" onchange="filterOrders()">
+              <input
+                type="number"
+                id="minPrice"
+                placeholder="Min"
+                step="0.01"
+                onchange="filterOrders()"
+              />
+              <span>to</span>
+              <input
+                type="number"
+                id="maxPrice"
+                placeholder="Max"
+                step="0.01"
+                onchange="filterOrders()"
+              />
             </div>
+          </div>
         </div>
-    </div>
-</div>
+      </div>
 
-<table class="content-table" id="ordersTable">
-    <thead>
-        <tr>
+      <table class="content-table" id="ordersTable">
+        <thead>
+          <tr>
             <th>Order Detail ID</th>
             <th>Order ID</th>
             <th>Customer</th>
@@ -126,17 +169,19 @@
             <th>Qty</th>
             <th>Unit Price</th>
             <th>Supplier</th>
-        </tr>
-    </thead>
-    <tbody>
-        <% orders.forEach(order => { %>
-        <tr data-orderid="<%= order.orderid %>"
+          </tr>
+        </thead>
+        <tbody>
+          <% orders.forEach(order => { %>
+          <tr
+            data-orderid="<%= order.orderid %>"
             data-customer="<%= order.customerid %>"
             data-employee="<%= order.employeeid %>"
             data-supplier="<%= order.supplierid %>"
             data-shipper="<%= order.shipperid %>"
             data-product="<%= order.productid %>"
-            data-price="<%= order.unitprice %>">
+            data-price="<%= order.unitprice %>"
+          >
             <td><%= order.orderdetailid %></td>
             <td><%= order.orderid %></td>
             <td><%= order.customername %></td>
@@ -147,15 +192,15 @@
             <td><%= order.quantity %></td>
             <td>$<%= order.unitprice %></td>
             <td><%= order.suppliersname %></td>
-        </tr>
-        <% }); %>
-    </tbody>
-</table>
-        <div id="no-results" class="no-results">
-            <i class="fas fa-search fa-lg"></i>
-            <p>No orders found matching your search</p>
-        </div>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      <div id="no-results" class="no-results">
+        <i class="fas fa-search fa-lg"></i>
+        <p>No orders found matching your search</p>
+      </div>
     </div>
     <script src="/orders.js"></script>
-</body>
+  </body>
 </html>
