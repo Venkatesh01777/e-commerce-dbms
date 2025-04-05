@@ -8,13 +8,12 @@ const app = express();
 const port = 3000;
 dotenv.config();
 
-// PostgreSQL connection
+// PostgreSQL connection for neon db
 const pool = new pg.Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // required for Neon SSL
+  },
 });
 
 // Test database connection
