@@ -2,11 +2,24 @@ import express from "express";
 import pg from "pg";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
+import session from "express-session";
+import flash from "express-flash";
+import passport from "passport";
+import { Strategy as LocalStrategy } from "passport-local";
+import bcrypt from "bcrypt";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
 const port = 3000;
 dotenv.config();
+
+// const pool = new pg.Pool({
+//   user: process.env.DB_USER,
+//   host: process.env.DB_HOST,
+//   database: process.env.DB_NAME,
+//   password: process.env.DB_PASSWORD,
+//   port: process.env.DB_PORT,
+// });
 
 // PostgreSQL connection for neon db
 const pool = new pg.Pool({
@@ -28,17 +41,164 @@ pool
     process.exit(1); // Exit if connection fails
   });
 
+// Session configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    },
+  })
+);
+app.use(flash());
+// Passport initialization
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Passport local strategy
+passport.use(
+  new LocalStrategy(async (username, password, done) => {
+    try {
+      const { rows } = await pool.query(
+        "SELECT * FROM users WHERE username = $1",
+        [username]
+      );
+
+      if (rows.length === 0) {
+        return done(null, false, { message: "Incorrect username." });
+      }
+
+      const user = rows[0];
+      const isValidPassword = await bcrypt.compare(password, user.password);
+
+      if (!isValidPassword) {
+        return done(null, false, { message: "Incorrect password." });
+      }
+
+      return done(null, user);
+    } catch (err) {
+      return done(err);
+    }
+  })
+);
+
+// Serialize/deserialize user
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [
+      id,
+    ]);
+    done(null, rows[0]);
+  } catch (err) {
+    done(err);
+  }
+});
+
+// Middleware to check if user is authenticated
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/login");
+}
+
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
-app.set("view engine", "ejs"); // You need this for res.render() to work
+app.set("view engine", "ejs");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-app.get("/", (req, res) => {
-  res.render("home");
+// Routes
+app.get("/", ensureAuthenticated, (req, res) => {
+  res.render("home", { user: req.user });
 });
 
-app.get("/products", async (req, res) => {
+app.get("/login", (req, res) => {
+  res.render("login", { message: req.flash("error") });
+});
+
+app.post(
+  "/login",
+  passport.authenticate("local", {
+    successRedirect: "/",
+    failureRedirect: "/login",
+    failureFlash: true,
+  })
+);
+
+app.post("/logout", (req, res) => {
+  req.logout((err) => {
+    if (err) {
+      console.error("Logout error:", err);
+      return res.redirect("/");
+    }
+    req.flash("success", "You have been logged out");
+    res.redirect("/login");
+  });
+});
+
+// Add these routes after your login routes
+
+// GET register page
+app.get("/register", ensureAuthenticated, (req, res) => {
+  const errorMessage = req.flash("error")[0];
+  res.render("register", { errorMessage });
+});
+
+// POST register
+app.post("/register", async (req, res) => {
+  const { username, password, confirmPassword } = req.body;
+
+  try {
+    // Validate inputs
+    if (!username || !password) {
+      req.flash("error", "Username and password are required");
+      return res.redirect("/register");
+    }
+
+    if (password !== confirmPassword) {
+      req.flash("error", "Passwords do not match");
+      return res.redirect("/register");
+    }
+
+    // Check if user exists
+    const userExists = await pool.query(
+      "SELECT * FROM users WHERE username = $1",
+      [username]
+    );
+
+    if (userExists.rows.length > 0) {
+      req.flash("error", "Username already exists");
+      return res.redirect("/register");
+    }
+
+    // Hash password
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new user
+    await pool.query("INSERT INTO users (username, password) VALUES ($1, $2)", [
+      username,
+      hashedPassword,
+    ]);
+
+    req.flash("success", "Registration successful! Please login");
+    res.redirect("/login");
+  } catch (err) {
+    console.error("Registration error:", err);
+    req.flash("error", "Registration failed");
+    res.redirect("/register");
+  }
+});
+
+// Protected routes
+app.get("/products", ensureAuthenticated, async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT p.productid, p.productname, s.suppliersname, c.categoryname, p.unit, p.price 
@@ -47,14 +207,14 @@ app.get("/products", async (req, res) => {
       JOIN categories c ON p.categoryid = c.categoryid
       ORDER BY productid
     `);
-    res.render("products", { products: rows });
+    res.render("products", { products: rows, user: req.user });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");
   }
 });
 
-app.get("/customers", async (req, res) => {
+app.get("/customers", ensureAuthenticated, async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT customerid, customername, contractname, 
@@ -62,14 +222,14 @@ app.get("/customers", async (req, res) => {
       FROM customers
       ORDER BY customerid
     `);
-    res.render("customers", { customers: rows });
+    res.render("customers", { customers: rows, user: req.user });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");
   }
 });
 
-app.get("/employees", async (req, res) => {
+app.get("/employees", ensureAuthenticated, async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT employeeid, lastname, firstname, 
@@ -77,14 +237,14 @@ app.get("/employees", async (req, res) => {
       FROM employees
       ORDER BY employeeid
     `);
-    res.render("employees", { employees: rows });
+    res.render("employees", { employees: rows, user: req.user });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");
   }
 });
 
-app.get("/suppliers", async (req, res) => {
+app.get("/suppliers", ensureAuthenticated, async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT supplierid, suppliersname, contactname, address, city, postalcode
@@ -92,14 +252,14 @@ app.get("/suppliers", async (req, res) => {
       FROM suppliers
       ORDER BY supplierid
     `);
-    res.render("suppliers", { suppliers: rows });
+    res.render("suppliers", { suppliers: rows, user: req.user });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");
   }
 });
 
-app.get("/shippers", async (req, res) => {
+app.get("/shippers", ensureAuthenticated, async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT shipperid, shippername, 
@@ -107,14 +267,14 @@ app.get("/shippers", async (req, res) => {
       FROM shippers
       ORDER BY shipperid
     `);
-    res.render("shippers", { shippers: rows });
+    res.render("shippers", { shippers: rows, user: req.user });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");
   }
 });
 
-app.get("/orders", async (req, res) => {
+app.get("/orders", ensureAuthenticated, async (req, res) => {
   const orders = await pool.query(`
       SELECT 
           od.orderdetailid,  
@@ -158,11 +318,11 @@ app.get("/orders", async (req, res) => {
     suppliers: suppliers.rows,
     shippers: shippers.rows,
     products: products.rows,
+    user: req.user,
   });
 });
 
-// Render reports page on GET /reports
-app.get("/reports", async (req, res) => {
+app.get("/reports", ensureAuthenticated, async (req, res) => {
   try {
     const salesTrends = await pool.query(`
         SELECT 
@@ -232,6 +392,7 @@ app.get("/reports", async (req, res) => {
       employeeOrders: employeeOrders.rows,
       shipperOrders: shipperOrders.rows,
       summaryStats: summaryStats.rows[0],
+      user: req.user,
     });
   } catch (err) {
     console.error(err.message);
@@ -239,7 +400,11 @@ app.get("/reports", async (req, res) => {
   }
 });
 
-app.post("/api/ai-query", async (req, res) => {
+app.get("/ai-query", ensureAuthenticated, (req, res) => {
+  res.render("ai-query", { user: req.user });
+});
+
+app.post("/api/ai-query", ensureAuthenticated, async (req, res) => {
   try {
     const { prompt } = req.body;
 
@@ -261,7 +426,8 @@ app.post("/api/ai-query", async (req, res) => {
       - ordersdetails (orderdetailid, orderid, productid, quantity)
       - categories (categoryid, categoryname, descriptiontext)
       
-      Return ONLY the SQL query with no additional explanation or formatting.read ordersdetails properly.
+      Return ONLY the SQL query with no additional explanation or formatting. 
+      read "ordersdetails" properly.
 
 
       User request: ${prompt}`
@@ -284,4 +450,44 @@ app.post("/api/ai-query", async (req, res) => {
   }
 });
 
-app.listen(port, () => console.log(`Server running on port ${port}`));
+// Create initial admin user if not exists (for development)
+async function createInitialUser() {
+  try {
+    const { rows } = await pool.query(
+      "SELECT * FROM users WHERE username = 'admin'"
+    );
+    if (rows.length === 0) {
+      const hashedPassword = await bcrypt.hash("admin123", 10);
+      await pool.query(
+        "INSERT INTO users (username, password, is_admin) VALUES ($1, $2, $3)",
+        ["admin", hashedPassword, true]
+      );
+      console.log("Initial admin user created");
+    }
+  } catch (err) {
+    console.error("Error creating initial user:", err);
+  }
+}
+
+// Create users table if not exists
+async function setupDatabase() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        is_admin BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log("Users table created or already exists");
+    await createInitialUser();
+  } catch (err) {
+    console.error("Error setting up database:", err);
+  }
+}
+
+setupDatabase().then(() => {
+  app.listen(port, () => console.log(`Server running on port ${port}`));
+});

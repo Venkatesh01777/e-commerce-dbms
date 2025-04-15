@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Data Query | Northwind</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f7fa;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+
+      .ai-query-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+      }
+
+      .ai-query-card h2 {
+        color: #2c3e50;
+        margin-top: 0;
+        font-size: 1.8rem;
+      }
+
+      #aiPrompt {
+        width: 100%;
+        min-height: 150px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 1rem;
+        resize: vertical;
+        transition: border 0.3s ease;
+      }
+
+      #aiPrompt:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+      }
+
+      button[type="submit"] {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      button[type="submit"]:hover {
+        background-color: #2980b9;
+      }
+
+      .results-container {
+        margin-top: 2rem;
+        display: none;
+      }
+
+      .query-display {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        font-family: "Courier New", monospace;
+        white-space: pre-wrap;
+        border-left: 4px solid #3498db;
+      }
+
+      .data-table-container {
+        overflow-x: auto;
+        margin-bottom: 2rem;
+      }
+
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+      }
+
+      .data-table th,
+      .data-table td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .data-table th {
+        background-color: #f1f5f9;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+
+      .data-table tr:hover {
+        background-color: #f8fafc;
+      }
+
+      .chart-container {
+        margin: 2rem 0;
+        position: relative;
+        height: 400px;
+      }
+
+      .back-button {
+        display: inline-block;
+        margin-top: 1rem;
+        color: #3498db;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .back-button:hover {
+        text-decoration: underline;
+      }
+
+      /* Add this to your existing styles */
+      .chart-container {
+        margin: 2rem 0;
+        position: relative;
+        height: 400px;
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .chart-container h3 {
+        margin-top: 0;
+        color: #2c3e50;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>AI Data Query</h1>
+        <% if (user) { %>
+        <div class="user-info">
+          <span>Welcome, <strong><%= user.username %></strong></span>
+          <form action="/logout" method="POST" style="display: inline">
+            <button
+              type="submit"
+              style="margin-left: 1rem; padding: 0.5rem 1rem"
+            >
+              Logout
+            </button>
+          </form>
+        </div>
+        <% } %>
+      </div>
+      <a href="/" class="back-button">← Back to Dashboard</a>
+
+      <div class="ai-query-card">
+        <form id="aiQueryForm">
+          <h2>Ask About Your Data</h2>
+          <textarea
+            id="aiPrompt"
+            placeholder="Example queries:
+                    - Sales performance by employee
+                    - Top 10 customers by order count
+                    - Compare monthly sales for this year vs last year"
+            required
+          ></textarea>
+          <button type="submit">Generate Report</button>
+        </form>
+
+        <div class="results-container" id="aiResults">
+          <h2>Generated Results</h2>
+          <div class="query-display">
+            <p>
+              <strong>Generated SQL:</strong> <span id="generatedQuery"></span>
+            </p>
+          </div>
+
+          <div class="data-table-container" id="aiDataTable"></div>
+           <!-- Change this part in your ai-query.ejs -->
+           <div
+           class="chart-container"
+           id="chartContainer"
+           style="display: none"
+         >
+           <h3>Data Visualization</h3>
+           <canvas id="aiChart"></canvas>
+         </div>
+          
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("aiQueryForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const prompt = document.getElementById("aiPrompt").value;
+          const resultsContainer = document.getElementById("aiResults");
+
+          try {
+            // Show loading state
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Generating...";
+
+            const response = await fetch("/api/ai-query", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ prompt }),
+            });
+
+            const result = await response.json();
+
+            // Display the generated SQL
+            document.getElementById("generatedQuery").textContent =
+              result.query;
+
+            // Visualize the data
+            renderAIData(result.data);
+
+            // Show results section
+            resultsContainer.style.display = "block";
+          } catch (error) {
+            console.error("Error:", error);
+            alert("Failed to generate report: " + error.message);
+          } finally {
+            // Reset button state
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Generate Report";
+          }
+        });
+
+      function renderAIData(data) {
+        const container = document.getElementById("aiDataTable");
+        container.innerHTML = "";
+
+        if (!data || data.length === 0) {
+          container.innerHTML = "<p>No data returned from query</p>";
+          tryRenderAIChart(null); // Explicitly pass null to hide chart
+          return;
+        }
+
+        // Create table
+        const table = document.createElement("table");
+        table.className = "data-table";
+
+        // Create header
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+
+        Object.keys(data[0]).forEach((key) => {
+          const th = document.createElement("th");
+          th.textContent = key;
+          headerRow.appendChild(th);
+        });
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // Create body
+        const tbody = document.createElement("tbody");
+
+        data.forEach((row) => {
+          const tr = document.createElement("tr");
+
+          Object.values(row).forEach((value) => {
+            const td = document.createElement("td");
+            td.textContent = value !== null ? value : "NULL";
+            tr.appendChild(td);
+          });
+
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        container.appendChild(table);
+
+        // Try to render as chart if possible
+        tryRenderAIChart(data);
+      }
+
+      function tryRenderAIChart(data) {
+        const container = document.getElementById("chartContainer");
+        const ctx = document.getElementById("aiChart");
+
+        // Always start by hiding the container
+        container.style.display = "none";
+
+        // Destroy previous chart if exists
+        if (ctx.chart) {
+          ctx.chart.destroy();
+        }
+
+        // Check if data is suitable for charting
+        if (!isDataChartable(data)) {
+          console.log("Data not suitable for chart visualization");
+          return;
+        }
+
+        // If we get here, data is chartable - show the container
+        container.style.display = "block";
+
+        const keys = Object.keys(data[0]);
+        const labelColumn = keys[0];
+        const valueColumn =
+          keys.find((key) =>
+            data.some((row) => typeof row[key] === "number")
+          ) || keys[1]; // Fallback to second column if no numbers found
+
+        const labels = data.map((row) => row[labelColumn]);
+        const values = data.map((row) => row[valueColumn]);
+
+        // Create new chart
+        ctx.chart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: valueColumn,
+                data: values,
+                backgroundColor: "rgba(52, 152, 219, 0.7)",
+                borderColor: "rgba(52, 152, 219, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: "AI Generated Visualization",
+              },
+            },
+          },
+        });
+      }
+
+      // Helper function to determine if data can be charted
+      function isDataChartable(data) {
+        if (!data || data.length === 0) return false;
+
+        const keys = Object.keys(data[0]);
+        if (keys.length < 2) return false;
+
+        // Check if we have at least one numeric column and one string column
+        const hasNumeric = keys.some((key) =>
+          data.some((row) => typeof row[key] === "number")
+        );
+        const hasString = keys.some((key) =>
+          data.some((row) => typeof row[key] === "string")
+        );
+
+        return hasNumeric && hasString;
+      }
+    </script>
+  </body>
+</html>

@@ -14,6 +14,14 @@
     <header>
       <h1>Database Management System</h1>
       <p class="subtitle">Manage your business data efficiently</p>
+      <% if (user) { %>
+      <div class="user-info">
+        <span>Welcome, <strong><%= user.username %></strong></span>
+        <form action="/logout" method="POST">
+          <button type="submit" class="logout-btn">Logout</button>
+        </form>
+      </div>
+      <% } %>
     </header>
 
     <div class="container">
@@ -60,196 +68,20 @@
           <h2>Reports</h2>
           <p>Generate business insights and analytics</p>
         </div>
+
+        <div class="card register" onclick="navigateTo('register')">
+          <i class="fa-solid fa-circle-user"></i>
+          <h2>Add Admin</h2>
+          <p>Administrator registration form</p>
+        </div>
+
+        <div class="card ai-query" onclick="navigateTo('ai-query')">
+          <i class="fa-solid fa-robot"></i>
+          <h2>AI bot</h2>
+          <p>makes life easier</p>
+        </div>
       </div>
     </div>
-
-    <div class="ai-query-container">
-      <h2>AI-Powered Data Query</h2>
-      <form id="aiQueryForm">
-        <textarea
-          id="aiPrompt"
-          placeholder="Ask a question about your data (e.g., 'Show me top 5 products by revenue')"
-          required
-        ></textarea>
-        <button type="submit">Generate Report</button>
-      </form>
-      <div id="aiResults" class="hidden">
-        <h3>Generated Results</h3>
-        <div class="query-display">
-          <p>
-            <strong>Generated SQL:</strong> <span id="generatedQuery"></span>
-          </p>
-        </div>
-        <div class="chart-container">
-          <canvas id="aiChart"></canvas>
-        </div>
-        <div class="data-table-container" id="aiDataTable"></div>
-      </div>
-    </div>
-
-    <script>
-      document
-        .getElementById("aiQueryForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const prompt = document.getElementById("aiPrompt").value;
-
-          try {
-            const response = await fetch("/api/ai-query", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ prompt }),
-            });
-
-            const result = await response.json();
-
-            // Display the generated SQL
-            document.getElementById("generatedQuery").textContent =
-              result.query;
-
-            // Visualize the data (simple table for now)
-            renderAIData(result.data);
-
-            // Show results section
-            document.getElementById("aiResults").classList.remove("hidden");
-          } catch (error) {
-            console.error("Error:", error);
-            alert("Failed to generate report: " + error.message);
-          }
-        });
-
-      function renderAIData(data) {
-        const container = document.getElementById("aiDataTable");
-        container.innerHTML = "";
-
-        if (!data || data.length === 0) {
-          container.innerHTML = "<p>No data returned from query</p>";
-          return;
-        }
-
-        // Create table
-        const table = document.createElement("table");
-        table.className = "data-table";
-
-        // Create header
-        const thead = document.createElement("thead");
-        const headerRow = document.createElement("tr");
-
-        Object.keys(data[0]).forEach((key) => {
-          const th = document.createElement("th");
-          th.textContent = key;
-          headerRow.appendChild(th);
-        });
-
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        // Create body
-        const tbody = document.createElement("tbody");
-
-        data.forEach((row) => {
-          const tr = document.createElement("tr");
-
-          Object.values(row).forEach((value) => {
-            const td = document.createElement("td");
-            td.textContent = value;
-            tr.appendChild(td);
-          });
-
-          tbody.appendChild(tr);
-        });
-
-        table.appendChild(tbody);
-        container.appendChild(table);
-
-        // Try to render as chart if possible
-        tryRenderAIChart(data);
-      }
-
-      function tryRenderAIChart(data) {
-        // Simple logic to detect if data is chartable
-        if (data.length > 0 && Object.keys(data[0]).length === 2) {
-          const ctx = document.getElementById("aiChart").getContext("2d");
-          const labels = data.map((row) => Object.values(row)[0]);
-          const values = data.map((row) => Object.values(row)[1]);
-
-          new Chart(ctx, {
-            type: "bar",
-            data: {
-              labels: labels,
-              datasets: [
-                {
-                  label: "AI Query Results",
-                  data: values,
-                  backgroundColor: "rgba(75, 192, 192, 0.6)",
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                title: {
-                  display: true,
-                  text: "AI Generated Report",
-                },
-              },
-            },
-          });
-        }
-      }
-    </script>
-
-    <style>
-      .ai-query-container {
-        background: white;
-        padding: 2rem;
-        border-radius: 8px;
-        margin-bottom: 2rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-      }
-
-      #aiPrompt {
-        width: 100%;
-        min-height: 100px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-family: inherit;
-      }
-
-      .hidden {
-        display: none;
-      }
-
-      .query-display {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 4px;
-        margin-bottom: 1rem;
-        font-family: monospace;
-        white-space: pre-wrap;
-      }
-
-      .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-      }
-
-      .data-table th,
-      .data-table td {
-        padding: 0.75rem;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-      }
-
-      .data-table th {
-        background-color: #f2f2f2;
-      }
-    </style>
 
     <script>
       function navigateTo(page) {
