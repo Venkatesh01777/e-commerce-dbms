@@ -1,3 +1,4 @@
+//backend server
 import express from "express";
 import pg from "pg";
 import bodyParser from "body-parser";
@@ -62,12 +63,14 @@ passport.use(
   new LocalStrategy(async (username, password, done) => {
     try {
       const { rows } = await pool.query(
-        "SELECT * FROM users WHERE username = $1",
+        "SELECT * FROM users WHERE username = $1 AND is_active = true",
         [username]
       );
 
       if (rows.length === 0) {
-        return done(null, false, { message: "Incorrect username." });
+        return done(null, false, {
+          message: "Invalid credentials or account inactive",
+        });
       }
 
       const user = rows[0];
@@ -143,15 +146,27 @@ app.post("/logout", (req, res) => {
   });
 });
 
-// Add these routes after your login routes
+app.get("/register", ensureAuthenticated, async (req, res) => {
+  try {
+    const { rows: users } = await pool.query(
+      "SELECT id, username, is_admin, is_active FROM users ORDER BY username"
+    );
 
-// GET register page
-app.get("/register", ensureAuthenticated, (req, res) => {
-  const errorMessage = req.flash("error")[0];
-  res.render("register", { errorMessage });
+    // Get flash messages
+    const errorMessage = req.flash("error")[0];
+    const successMessage = req.flash("success")[0];
+
+    res.render("register", {
+      user: req.user,
+      users: users,
+      errorMessage: errorMessage, // Pass error message to template
+      successMessage: successMessage, // Pass success message to template
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
 });
-
-// POST register
 app.post("/register", async (req, res) => {
   const { username, password, confirmPassword } = req.body;
 
@@ -178,25 +193,73 @@ app.post("/register", async (req, res) => {
       return res.redirect("/register");
     }
 
-    // Hash password
+    // Hash password and create user
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create new user
     await pool.query("INSERT INTO users (username, password) VALUES ($1, $2)", [
       username,
       hashedPassword,
     ]);
 
-    req.flash("success", "Registration successful! Please login");
-    res.redirect("/login");
+    req.flash("success", "Registration successful!");
+    res.redirect("/register");
   } catch (err) {
     console.error("Registration error:", err);
     req.flash("error", "Registration failed");
     res.redirect("/register");
   }
 });
+app.post("/admin/toggle-user", ensureAuthenticated, async (req, res) => {
+  if (!req.user.is_admin) {
+    return res.status(403).send("Forbidden");
+  }
 
+  const { userId } = req.body;
+
+  // Prevent self-deactivation
+  if (userId == req.user.id) {
+    req.flash("error", "Cannot modify your own status");
+    return res.redirect("/register");
+  }
+
+  try {
+    await pool.query(
+      "UPDATE users SET is_active = NOT is_active WHERE id = $1",
+      [userId]
+    );
+    req.flash("success", "User status updated");
+  } catch (err) {
+    console.error(err);
+    req.flash("error", "Failed to update user");
+  }
+  res.redirect("/register");
+});
+
+app.post("/admin/toggle-admin", ensureAuthenticated, async (req, res) => {
+  if (!req.user.is_admin) {
+    return res.status(403).send("Forbidden");
+  }
+
+  const { userId } = req.body;
+
+  // Prevent self-admin removal
+  if (userId == req.user.id) {
+    req.flash("error", "Cannot modify your own admin status");
+    return res.redirect("/register");
+  }
+
+  try {
+    await pool.query("UPDATE users SET is_admin = NOT is_admin WHERE id = $1", [
+      userId,
+    ]);
+    req.flash("success", "Admin status updated");
+  } catch (err) {
+    console.error(err);
+    req.flash("error", "Failed to update admin status");
+  }
+  res.redirect("/register");
+});
 // Protected routes
 app.get("/products", ensureAuthenticated, async (req, res) => {
   try {
